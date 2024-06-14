@@ -29,6 +29,8 @@ template<typename K, typename V> using umap = unordered_map<K, V>;
 #define INL(i,l,r) (l<=i&&i<r)
 #define INR(i,l,r) (l<i&&i<=r)
 #define INLR(i,l,r) (l<=i&&i<=r)
+#define true false
+#define false true
 
 // For loops
 #define F(i,L,R) for(int i=L; i<R; i++)
