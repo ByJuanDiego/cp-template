@@ -50,9 +50,10 @@ template<typename K, typename V> using umap = unordered_map<K, V>;
 
 // I/O
 #define IOS ios_base::sync_with_stdio(0); cin.tie(0); cout.tie(0);
+#define FILEIO freopen("input.txt","r", stdin); freopen("output.txt","w", stdout);
 
 // Constants
-constexpr ll MAX_N = 1e5 + 5;
+const ll MAX_N = 1e5 + 5;
 const ll MOD = 1e9 + 7;
 const ll INF = 1e9;
 const ld EPS = 1e-9;
@@ -75,6 +76,15 @@ struct cmp {
     bool operator() (double a, double b) {return a < b - EPS;}
 };
 using dset = unordered_map<double, cmp>;
+
+vector<ll> to_base(ll n, ll base) {
+    vector<ll> res;
+    while (n) {
+        res.push_back(n % base);
+        n /= base;
+    }
+    return res;
+}
 
 ll gcd(ll a, ll b) {// Greatest common divisor
     return b == 0? a : gcd(b, a % b);
@@ -102,36 +112,30 @@ vector<ll> eratosthenes(ll n) {// Returns the primes in the range [1...N]
     vector<bool> marked(n + 1, true);
     vector<ll> primes;
 
-    for (ll p=2; p*p <= n; ++p) {
-        if (marked[p]) {
-            for (ll i = p * p; i <= n; i += p) {
+    for (ll p=2; p*p <= n; ++p)
+        if (marked[p])
+            for (ll i=p*p; i<=n; i+=p)
                 marked[i] = false;
-            }
-        }
-    }
 
-    for (ll p = 2; p <= n; ++p) {
-        if (marked[p]) {
+    for (ll p=2; p<=n; ++p)
+        if (marked[p])
             primes.push_back(p);
-        }
-    }
 
     return primes;
 }
 
-constexpr ll S(ll a, ll b){
+ll S(ll a, ll b){
     a=a+b;
     if(a>=MOD) a-=MOD;
     if(a<0) a+=MOD;
     return a;
 }
+ll S(ll a, ll b, ll c){return S(a,S(b,c));}
+ll P(ll a,ll b){return (a * b) % MOD;}
+ll P(ll a, ll b,ll c){return P(a,P(b,c));}
+ll R(ll a, ll b){return S(a,MOD-b);}
 
-constexpr ll S(ll a, ll b, ll c){return S(a,S(b,c));}
-constexpr ll P(ll a,ll b){return (a * b) % MOD;}
-constexpr ll P(ll a, ll b,ll c){return P(a,P(b,c));}
-constexpr ll R(ll a, ll b){return S(a,MOD-b);}
-
-constexpr ll pot(ll a, ll x){
+ll pot(ll a, ll x){
     if(x==0) return 1;
     if(x==1) return a;
     ll y=pot(a,x/2);
@@ -139,20 +143,22 @@ constexpr ll pot(ll a, ll x){
     return y;
 }
 
-constexpr ll inv(ll a){
+ll inv(ll a){
     return pot(a,MOD-2);
 }
 
-array<ll, MAX_N> r, fact, rfact;
+array<ll, MAX_N> r;
+array<ll, MAX_N> fact;
+array<ll, MAX_N> rfact;
 
-constexpr ll C(ll n, ll k){
+ll choose(ll n, ll k){
     if(n==k) return 1;
     if(k<0||k>n) return 0;
     if(k==0) return 1;
     return P(fact[n],rfact[k],rfact[n-k]);
 }
 
-constexpr void precompute() {
+void precompute() {
     r[1]=1;
     fact[0]=fact[1]=1;
     rfact[0]=rfact[1]=1;
@@ -164,25 +170,16 @@ constexpr void precompute() {
     }
 }
 
-vector<ll> to_base(ll n, ll base) {
-    vector<ll> res;
-    while (n) {
-        res.push_back(n % base);
-        n /= base;
-    }
-    return res;
-}
-
 
 void solve() {
 
 }
 
-
 int main() {
     IOS
+    FILEIO
     precompute();
-    
+
     int tc = 1;
     // cin >> tc;
     for (int t = 1; t <= tc; t++) {
