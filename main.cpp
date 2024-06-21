@@ -147,7 +147,7 @@ ll inv(ll a){
     return pot(a,MOD-2);
 }
 
-array<ll, MAX_N> r;
+array<ll, MAX_N> r_;
 array<ll, MAX_N> fact;
 array<ll, MAX_N> rfact;
 
@@ -159,17 +159,220 @@ ll choose(ll n, ll k){
 }
 
 void precompute() {
-    r[1]=1;
+    r_[1]=1;
     fact[0]=fact[1]=1;
     rfact[0]=rfact[1]=1;
 
     for(ll i=2; i<MAX_N; i++) {
-        r[i]=P(MOD-1,(MOD/i), r[MOD%i]);
+        r_[i]=P(MOD-1,(MOD/i), r_[MOD%i]);
         fact[i]=P(fact[i-1],i);
-        rfact[i]=P(rfact[i-1],r[i]);
+        rfact[i]=P(rfact[i-1],r_[i]);
     }
 }
 
+struct SegmentTreeNode {
+    ll seg, pref, suf, sum;
+};
+
+// 1-indexed array
+class SegmentTree {
+    ll n;
+    // min, cnt
+    vector<SegmentTreeNode> tree;
+    SegmentTreeNode neutral = {0, 0, 0, 0};
+    void build(const vector<ll> &v, ll i, ll l, ll r) {
+        if (l == r) {
+            tree[i] = single(v[l]);
+        } else {
+            ll mid = (l + r) / 2;
+            build(v, i * 2, l, mid);
+            build(v, i * 2 + 1, mid + 1, r);
+            // Change operation as desired
+            tree[i] = merge(tree[i * 2], tree[i * 2 + 1]);
+        }
+    }
+    SegmentTreeNode calc(ll i, ll tl, ll tr, ll l, ll r) {
+        // cut recursion (out of range)
+        if (l > r) {
+            return neutral;
+        }
+        // cut recursion, interval in segtree
+        if (l <= tl && tr <= r) {
+            return tree[i];
+        }
+        // search both sides
+        ll tmid = (tl + tr) / 2;
+        SegmentTreeNode a = calc(i * 2, tl, tmid, l, min(r, tmid)), b = calc(i * 2 + 1, tmid + 1, tr,max(l, tmid + 1), r);
+        return merge(a, b);
+    }
+    void update(ll i, ll tl, ll tr, ll val, ll pos) {
+        if (tl == tr) {
+            tree[i] = single(val);
+            return;
+        }
+        ll tmid = (tl + tr) / 2;
+        if (pos <= tmid) {
+            update(i * 2, tl, tmid, val, pos);
+        } else {
+            update(i * 2 + 1, tmid + 1, tr, val, pos);
+        }
+        tree[i] = merge(tree[i * 2], tree[i * 2 + 1]);
+    }
+    SegmentTreeNode single(ll v) {
+        if (v > 0) {
+            return {v, v, v, v};
+        } else {
+            // handle negative case
+            return {0, 0, 0, v};
+        }
+    }
+    SegmentTreeNode merge(const SegmentTreeNode &a, const SegmentTreeNode &b) {
+        return {
+                max(a.seg, max(b.seg, a.suf + b.pref)),
+                max(a.pref, a.sum + b.pref),
+                max(b.suf, b.sum + a.suf),
+                a.sum + b.sum,
+        };
+    }
+public:
+    explicit SegmentTree(const vector<ll> &v) {
+        n = v.size() - 1;
+        tree = vector<SegmentTreeNode>(4 * n + 1, neutral);
+        build(v, 1, 1, n);
+    }
+    SegmentTreeNode calc(ll l, ll r) {
+        return calc(1, 1, n, l, r);
+    }
+    void update(ll idx, ll value) {
+        update(1, 1, n, value, idx);
+    }
+};
+
+template <typename T>
+class DisjointSetArray
+{
+private:
+    // define the structures
+    vector<T> dt;
+    int *parent = nullptr;
+    int *rank = nullptr;
+    int *sizes = nullptr;
+    size_t sz;
+    ll n_sets;
+    int biggest_set = 1;
+public:
+    // implement all functions
+    explicit DisjointSetArray(const vector<T> &data) {
+        dt = data;
+        parent = new int[data.size()];
+        rank = new int[data.size()];
+        sizes = new int[data.size()];
+        sz = data.size();
+        n_sets = sz;
+
+        // make all sets
+        for (int i = 0; i < sz; ++i) {
+            MakeSet(i);
+        }
+    }
+    ~DisjointSetArray() {
+        delete[] parent;
+        delete[] rank;
+    }
+    /*
+    * x, y are indexes
+    */
+    //MakeSet the element with index x
+    void MakeSet(int x) {
+        parent[x] = x;
+        rank[x] = 0;
+        sizes[x] = 1;
+    }
+    //Find the root of x (with optimization by rank)
+    int Find(int x) {
+        if (parent[x] == x) {
+            return x;
+        }
+        else {
+            return Find(parent[x]);
+        }
+    }
+    //Find the root of x (with optimization path compression)
+    int FindPathCompression(int x) {
+        if (parent[x] == x) {
+            return x;
+        }
+        else {
+            parent[x] = FindPathCompression(parent[x]);
+            return parent[x];
+        }
+    }
+    //Union two sets represented by x and y (apply rank)
+    void Union(int x, int y) {
+        int xRoot = FindPathCompression(x);
+        int yRoot = FindPathCompression(y);
+        if (xRoot == yRoot) return;
+        n_sets--;
+        if (rank[xRoot] < rank[yRoot]) {
+            parent[xRoot] = yRoot;
+            sizes[yRoot] += sizes[xRoot];
+            biggest_set = max(biggest_set, sizes[yRoot]);
+        }
+        else if (rank[xRoot] > rank[yRoot]) {
+            parent[yRoot] = xRoot;
+            sizes[xRoot] += sizes[yRoot];
+            biggest_set = max(biggest_set, sizes[xRoot]);
+
+        }
+        else {
+            parent[xRoot] = yRoot;
+            sizes[yRoot] += sizes[xRoot];
+            rank[yRoot] += 1;
+            biggest_set = max(biggest_set, sizes[yRoot]);
+
+        }
+    }
+    ll get_count_sets() {
+        return n_sets;
+    }
+    ll get_biggest_set() {
+        return biggest_set;
+    }
+    //check whether there is a path between x and y
+    bool isConnected(int x, int y) {
+        return Find(x) == Find(y);
+    }
+    //total number of elements
+    int size() {
+        return sz;
+    }
+    //number of sets
+    int sets() {
+        int cnt = 0;
+        for (int i = 0; i < sz; ++i) {
+            // find elements whose parent is itself
+            if (parent[i] == i) ++cnt;
+        }
+        return cnt;
+    }
+    //total number of elements that belong to the set of x
+    int size(int x) {
+        // search for all elements with parent equal to x
+        int s = 0;
+        for (int i = 0; i < sz; ++i) {
+            if (Find(i) == Find(x)) ++s;
+        }
+        return s;
+    }
+    //return all elements that belong to the set of x
+    vector<T> getElementsSet(int x) {
+        vector<T> elements;
+        for (int i = 0; i < sz; ++i) {
+            if (Find(i) == Find(x)) elements.push_back(dt[i]);
+        }
+        return elements;
+    }
+};
 
 void solve() {
 
